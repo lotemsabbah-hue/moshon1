@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שיפודי מושון - הזמנה</title>
+
+<style>
+body { font-family: 'Segoe UI', sans-serif; background:#000; color:#fff; padding:10px; text-align:center; }
+.container { max-width:600px; background:#1a1a1a; padding:20px; border-radius:20px; margin:auto; border:1px solid #d4af37; box-shadow:0 0 20px rgba(212,175,55,0.2); }
+h1 { color:#d4af37; }
+
+.customer-info { background:#222; padding:15px; border-radius:10px; margin-bottom:20px; text-align:right; border-bottom:2px solid #d4af37; }
+label { display:block; margin:10px 0 5px; color:#d4af37; font-weight:bold; }
+input[type="text"], input[type="time"], textarea {
+  width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#333; color:#fff; box-sizing:border-box;
+}
+textarea { resize: vertical; min-height: 80px; }
+
+.dish-card { background:#2a2a2a; padding:15px; border-radius:12px; margin-bottom:15px; text-align:right; border:1px solid #444; }
+.dish-header { color:#d4af37; font-weight:bold; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+.remove-btn { color:#ff4d4d; cursor:pointer; font-size:14px; user-select:none; }
+
+.button-group { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px; }
+.option-btn{
+  padding:10px; background:#333; border:2px solid #444; border-radius:10px; color:#fff;
+  cursor:pointer; transition:0.2s;
+}
+.option-btn.active{
+  border-color:#d4af37;
+  box-shadow:0 0 8px #d4af37;
+}
+
+.extra-wrap { margin-top:12px; }
+.extra-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+.extra-item{
+  display:flex; align-items:center; background:#222; border:1px solid #444;
+  border-radius:10px; padding:10px;
+}
+.extra-item input{ margin-left:8px; accent-color:#d4af37; }
+
+.note { color:#bbb; font-size:12px; margin-top:6px; line-height:1.3; }
+
+.price-footer { background:#d4af37; color:#000; padding:15px; border-radius:10px; font-size:20px; font-weight:bold; margin:20px 0; }
+.btn-add { background:none; color:#d4af37; border:1px dashed #d4af37; padding:10px; width:100%; border-radius:10px; cursor:pointer; margin-bottom:10px; font-weight:bold; }
+.btn-send { background:#25d366; color:#fff; border:none; padding:15px; width:100%; border-radius:10px; font-size:18px; font-weight:bold; cursor:pointer; }
+
+.section { background:#222; border:1px solid #333; border-radius:10px; padding:12px; text-align:right; margin-top:12px; }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>שיפודי מושון - הזמנה</h1>
+
+  <div class="customer-info">
+    <label>שם מזמין (כללי):</label>
+    <input type="text" id="custName" placeholder="מי מזמין?">
+
+    <label>שעת איסוף (חובה):</label>
+    <input type="time"
+           id="pickupTime"
+           required
+           min="12:00"
+           max="22:00"
+           step="900"
+           inputmode="numeric">
+  </div>
+
+  <div id="dishes-container"></div>
+  <button class="btn-add" type="button" onclick="addDish()">+ הוסף מנה (עד 5)</button>
+
+  <!-- הערות -->
+  <div class="section">
+    <label>הערות להזמנה:</label>
+    <textarea id="orderNotes" placeholder="לדוגמה: בלי בצל, הרבה חריף, אריזה נפרדת..."></textarea>
+  </div>
+
+  <div class="price-footer">סה"כ לתשלום: <span id="totalSum">0</span> ₪</div>
+  <button class="btn-send" type="button" onclick="sendToWhatsApp()">שלח לוואטסאפ</button>
+</div>
+
+<script>
+let dishCount = 0;
+
+/* פתיחה נוחה של בורר השעה בלחיצה על כל השדה (כשנתמך) */
+(function setupTimePickerOpenAnywhere(){
+  const t = document.getElementById("pickupTime");
+  function tryOpenPicker(){
+    if (typeof t.showPicker === "function") t.showPicker();
+  }
+  // קליק / טאצ' על כל השדה
+  t.addEventListener("pointerdown", tryOpenPicker);
+  // גם כשמקבלים פוקוס (למשל עם TAB)
+  t.addEventListener("focus", tryOpenPicker);
+})();
+
+function addDish() {
+  if (dishCount >= 5) return alert("עד 5 מנות בלבד");
+  dishCount++;
+
+  const id = "dish-" + Date.now();
+  document.getElementById("dishes-container").insertAdjacentHTML("beforeend", `
+    <div class="dish-card" id="${id}">
+      <div class="dish-header">
+        <span>מנה #${dishCount}</span>
+        <span class="remove-btn" onclick="removeDish('${id}')">הסר</span>
+      </div>
+
+      <label>למי מיועדת המנה?</label>
+      <input type="text" class="dish-person" placeholder="שם (לדוגמה: אורי)" oninput="updateTotal()">
+
+      <label>הגשה:</label>
+      <div class="button-group">
+        <button type="button" class="option-btn active" data-serving="pita" onclick="selectOption(this)">פיתה</button>
+        <button type="button" class="option-btn" data-serving="lafa" onclick="selectOption(this)">לאפה</button>
+        <button type="button" class="option-btn" data-serving="plate" onclick="selectOption(this)">מגש</button>
+      </div>
+
+      <label>בשר:</label>
+      <div class="button-group">
+        <button type="button" class="option-btn active" data-meat="pargit" onclick="selectOption(this)">פרגית</button>
+        <button type="button" class="option-btn" data-meat="kabab" onclick="selectOption(this)">קבב</button>
+        <button type="button" class="option-btn" data-meat="liver" onclick="selectOption(this)">כבד עוף</button>
+        <button type="button" class="option-btn" data-meat="hearts" onclick="selectOption(this)">לבבות (2 שיפודים)</button>
+        <button type="button" class="option-btn" data-meat="antricot" onclick="selectOption(this)">אנטריקוט</button>
+        <button type="button" class="option-btn" data-meat="sweetbreads" onclick="selectOption(this)">שקדי עגל</button>
+      </div>
+
+      <div class="extra-wrap">
+        <label>תוספת שיפוד (ניתן לבחור אחד בלבד):</label>
+        <div class="extra-grid">
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="22" data-name="פרגית" onchange="handleExtraToggle(this)"> פרגית (+22₪)</label>
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="22" data-name="קבב" onchange="handleExtraToggle(this)"> קבב (+22₪)</label>
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="22" data-name="כבד" onchange="handleExtraToggle(this)"> כבד (+22₪)</label>
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="20" data-name="לבבות" onchange="handleExtraToggle(this)"> לבבות (+20₪)</label>
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="18" data-name="נקנקיות חריפות" onchange="handleExtraToggle(this)"> נקנקיות חריפות (+18₪)</label>
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="80" data-name="שקדי עגל" onchange="handleExtraToggle(this)"> שקדי עגל (+80₪)</label>
+          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="75" data-name="אנטריקוט" onchange="handleExtraToggle(this)"> אנטריקוט (+75₪)</label>
+        </div>
+      </div>
+
+      <div class="extra-wrap">
+        <label>ממרחים / תוספות:</label>
+        <div class="note">
+          פיתה/לאפה: עד 5 נספרים (לא כולל פטרוזיליה/בצל/עמבה/חריף/צ'יפס/צ'יפס בצד) • מגש: עד 3 נספרים
+        </div>
+
+        <div class="extra-grid">
+          <!-- נספרים -->
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="חומוס" onchange="limitSpreads(this)"> חומוס</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="חציל במיונז" onchange="limitSpreads(this)"> חציל במיונז</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="כרוב אדום במיונז" onchange="limitSpreads(this)"> כרוב אדום במיונז</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="כרוב לבן עם גזר במיונז" onchange="limitSpreads(this)"> כרוב לבן עם גזר במיונז</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="מטבוחה טורקי" onchange="limitSpreads(this)"> מטבוחה טורקי</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="סלט" onchange="limitSpreads(this)"> סלט</label>
+
+          <!-- לא נספרים -->
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="צ'יפס" onchange="limitSpreads(this)"> צ'יפס</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="צ'יפס בצד" onchange="limitSpreads(this)"> צ'יפס בצד</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="פטרוזיליה" onchange="limitSpreads(this)"> פטרוזיליה</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="בצל" onchange="limitSpreads(this)"> בצל</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="עמבה" onchange="limitSpreads(this)"> עמבה</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="חריף" onchange="limitSpreads(this)"> חריף</label>
+        </div>
+      </div>
+    </div>
+  `);
+
+  updateTotal();
+}
+
+function removeDish(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  dishCount = Math.max(0, dishCount - 1);
+  updateTotal();
+}
+
+function selectOption(btn) {
+  const card = btn.closest(".dish-card");
+  const group = btn.parentElement;
+
+  group.querySelectorAll(".option-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  enforceSpreadLimit(card);
+  updateTotal();
+}
+
+// תוספת שיפוד: רק אחד, checkbox מאפשר ביטול בלחיצה חוזרת
+function handleExtraToggle(el) {
+  const card = el.closest(".dish-card");
+  if (!card) return;
+
+  if (el.checked) {
+    card.querySelectorAll(".extra-skewer").forEach(cb => {
+      if (cb !== el) cb.checked = false;
+    });
+  }
+  updateTotal();
+}
+
+function calcDishPrice(serving, meat) {
+  const regular = ["pargit","kabab","liver","hearts"];
+
+  if (serving === "pita") {
+    if (regular.includes(meat)) return 45;
+    if (meat === "antricot") return 80;
+    if (meat === "sweetbreads") return 85;
+  }
+
+  if (serving === "lafa") {
+    if (regular.includes(meat)) return 50;
+    if (meat === "antricot") return 85;
+    if (meat === "sweetbreads") return 90;
+  }
+
+  if (serving === "plate") {
+    if (regular.includes(meat)) return 55;
+    if (meat === "antricot") return 90;
+    if (meat === "sweetbreads") return 95;
+  }
+
+  return 0;
+}
+
+/* ממרחים - הגבלות */
+function getSpreadMaxForCard(card) {
+  const servingBtn = card.querySelector('[data-serving].active');
+  const serving = servingBtn ? servingBtn.dataset.serving : "pita";
+  return (serving === "plate") ? 3 : 5;
+}
+
+function countChosenCountedSpreads(card) {
+  let count = 0;
+  card.querySelectorAll(".spread:checked").forEach(cb => {
+    if ((cb.dataset.counts || "1") === "1") count++;
+  });
+  return count;
+}
+
+function enforceSpreadLimit(card) {
+  const max = getSpreadMaxForCard(card);
+  while (countChosenCountedSpreads(card) > max) {
+    const checkedCounted = Array.from(card.querySelectorAll(".spread:checked"))
+      .filter(cb => (cb.dataset.counts || "1") === "1");
+    const last = checkedCounted[checkedCounted.length - 1];
+    if (!last) break;
+    last.checked = false;
+  }
+}
+
+function limitSpreads(el) {
+  const card = el.closest(".dish-card");
+  if (!card) return;
+
+  const max = getSpreadMaxForCard(card);
+  const count = countChosenCountedSpreads(card);
+
+  if (count > max) {
+    el.checked = false;
+    alert("ניתן לבחור עד " + max + " תוספות (נספרות) לפי סוג ההגשה");
+  }
+}
+
+function updateTotal() {
+  let total = 0;
+
+  document.querySelectorAll(".dish-card").forEach(card => {
+    const servingBtn = card.querySelector('[data-serving].active');
+    const meatBtn = card.querySelector('[data-meat].active');
+    if (!servingBtn || !meatBtn) return;
+
+    let price = calcDishPrice(servingBtn.dataset.serving, meatBtn.dataset.meat);
+
+    const extra = card.querySelector('.extra-skewer:checked');
+    if (extra) price += parseInt(extra.value) || 0;
+
+    total += price;
+  });
+
+  document.getElementById("totalSum").innerText = total;
+}
+
+// אכיפה נוספת לשעות 12:00-22:00 (גם אם מקלידים ידנית)
+document.getElementById("pickupTime").addEventListener("change", function() {
+  if (this.value && (this.value < "12:00" || this.value > "22:00")) {
+    alert("ניתן לבחור שעה בין 12:00 ל-22:00 בלבד");
+    this.value = "";
+  }
+});
+
+function sendToWhatsApp() {
+  const orderName = document.getElementById("custName").value.trim();
+  const time = document.getElementById("pickupTime").value;
+  const notes = document.getElementById("orderNotes").value.trim();
+
+  const dishes = document.querySelectorAll(".dish-card");
+  if (!orderName || dishes.length === 0) {
+    alert("חובה למלא שם ולהוסיף לפחות מנה אחת");
+    return;
+  }
+
+  // שעת איסוף חובה
+  if (!time) {
+    alert("חובה לבחור שעת איסוף");
+    document.getElementById("pickupTime").focus();
+    return;
+  }
+
+  let msg = "הזמנה חדשה - שיפודי מושון\n";
+  msg += "שם מזמין: " + orderName + "\n";
+  msg += "שעת איסוף: " + time + "\n\n";
+
+  let total = 0;
+
+  dishes.forEach((card, i) => {
+    const servingBtn = card.querySelector('[data-serving].active');
+    const meatBtn = card.querySelector('[data-meat].active');
+    if (!servingBtn || !meatBtn) return;
+
+    const dishPerson = (card.querySelector(".dish-person")?.value || "").trim();
+    const personText = dishPerson ? ` (ל${dishPerson})` : "";
+
+    const servingText = servingBtn.innerText.trim();
+    const meatText = meatBtn.innerText.trim();
+
+    let dishPrice = calcDishPrice(servingBtn.dataset.serving, meatBtn.dataset.meat);
+
+    msg += "מנה " + (i + 1) + personText + ": " + meatText + " ב" + servingText + "\n";
+
+    const extra = card.querySelector(".extra-skewer:checked");
+    if (extra) {
+      const extraName = extra.dataset.name || "תוספת";
+      const extraVal = parseInt(extra.value) || 0;
+      dishPrice += extraVal;
+      msg += "  • תוספת שיפוד: " + extraName + " (+" + extraVal + "₪)\n";
+    }
+
+    const spreads = Array.from(card.querySelectorAll(".spread:checked"))
+      .map(cb => cb.value)
+      .filter(Boolean);
+
+    if (spreads.length) {
+      msg += "  • ממרחים/תוספות: " + spreads.join(", ") + "\n";
+    }
+
+    msg += "  • מחיר למנה: " + dishPrice + "₪\n\n";
+    total += dishPrice;
+  });
+
+  if (notes) {
+    msg += "הערות: " + notes + "\n\n";
+  }
+
+  msg += 'סה"כ לתשלום: ' + total + " ₪";
+
+  window.open("https://wa.me/972548620301?text=" + encodeURIComponent(msg), "_blank");
+}
+
+window.onload = addDish;
+</script>
+
+</body>
+</html>

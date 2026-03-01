@@ -13,7 +13,6 @@ h1 { color:#d4af37; }
 .customer-info { background:#222; padding:15px; border-radius:10px; margin-bottom:20px; text-align:right; border-bottom:2px solid #d4af37; }
 label { display:block; margin:10px 0 5px; color:#d4af37; font-weight:bold; }
 
-/* שדות */
 input[type="text"], input[type="time"], textarea, select {
   width:100%;
   max-width:100%;
@@ -26,7 +25,6 @@ input[type="text"], input[type="time"], textarea, select {
   box-sizing:border-box;
 }
 
-/* ✅ תיקון "יוצא מהמסגרת" בשדות שעה (בעיקר במובייל/Safari) */
 input[type="time"]{
   display:block;
   -webkit-appearance:none;
@@ -79,7 +77,6 @@ textarea { resize: vertical; min-height: 80px; }
   <div id="dishes-container"></div>
   <button class="btn-add" type="button" onclick="addDish()">+ הוסף מנה (עד 5)</button>
 
-  <!-- אפשרות משלוח -->
   <div class="section">
     <label>אפשרות משלוח:</label>
 
@@ -88,7 +85,6 @@ textarea { resize: vertical; min-height: 80px; }
       <button type="button" class="option-btn" onclick="selectDelivery(this,'delivery')">משלוח עד הבית (+20₪)</button>
     </div>
 
-    <!-- שעת איסוף -->
     <div id="pickupSection" style="margin-top:10px;">
       <label>שעת איסוף:</label>
       <input type="time"
@@ -99,10 +95,8 @@ textarea { resize: vertical; min-height: 80px; }
              inputmode="numeric">
     </div>
 
-    <!-- שדות משלוח -->
     <div id="deliverySection" style="display:none; margin-top:10px;">
       <label>עיר:</label>
-      <!-- ✅ דרופדאון עיר - ברירת מחדל ריקה -->
       <select id="city">
         <option value="" selected>בחר/י עיר</option>
         <option value="נס ציונה">נס ציונה</option>
@@ -122,7 +116,6 @@ textarea { resize: vertical; min-height: 80px; }
     </div>
   </div>
 
-  <!-- הערות -->
   <div class="section">
     <label>הערות להזמנה:</label>
     <textarea id="orderNotes" placeholder="לדוגמה: בלי בצל, הרבה חריף, אריזה נפרדת..."></textarea>
@@ -153,7 +146,6 @@ function isTimeInRange(t, minStr="12:00", maxStr="22:00"){
   return v >= min && v <= max;
 }
 
-/* פתיחה נוחה של בורר השעה בלחיצה על כל השדה (כשנתמך) */
 (function setupTimePickerOpenAnywhere(){
   const t = document.getElementById("pickupTime");
   if (!t) return;
@@ -243,6 +235,10 @@ function addDish() {
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="כרוב לבן עם גזר במיונז" onchange="limitSpreads(this)"> כרוב לבן עם גזר במיונז</label>
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="מטבוחה טורקי" onchange="limitSpreads(this)"> מטבוחה טורקי</label>
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="סלט" onchange="limitSpreads(this)"> סלט</label>
+
+          <!-- ✅ חדשים: נספרים כחלק מה-5 -->
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="טחינה" onchange="limitSpreads(this)"> טחינה</label>
+          <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="לימון כבוש" onchange="limitSpreads(this)"> לימון כבוש</label>
 
           <!-- לא נספרים -->
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="0" value="צ'יפס" onchange="limitSpreads(this)"> צ'יפס</label>
@@ -417,7 +413,7 @@ function sendToWhatsApp() {
     msg += "אפשרות: איסוף עצמי\n";
     msg += "שעת איסוף: " + time + "\n\n";
   } else {
-    const city = document.getElementById("city").value; // select
+    const city = document.getElementById("city").value;
     const address = document.getElementById("address").value.trim();
     const apartment = document.getElementById("apartment").value.trim();
     const floor = document.getElementById("floor").value.trim();

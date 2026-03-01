@@ -13,8 +13,24 @@ h1 { color:#d4af37; }
 .customer-info { background:#222; padding:15px; border-radius:10px; margin-bottom:20px; text-align:right; border-bottom:2px solid #d4af37; }
 label { display:block; margin:10px 0 5px; color:#d4af37; font-weight:bold; }
 input[type="text"], input[type="time"], textarea {
-  width:100%; padding:12px; border-radius:8px; border:1px solid #333; background:#333; color:#fff; box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #333;
+  background:#333;
+  color:#fff;
+  box-sizing:border-box;
 }
+
+/* ✅ תיקון "יוצא מהמסגרת" בשדות שעה (בעיקר במובייל/Safari) */
+input[type="time"]{
+  display:block;
+  -webkit-appearance:none;
+  appearance:none;
+}
+
 textarea { resize: vertical; min-height: 80px; }
 
 .dish-card { background:#2a2a2a; padding:15px; border-radius:12px; margin-bottom:15px; text-align:right; border:1px solid #444; }
@@ -111,6 +127,23 @@ textarea { resize: vertical; min-height: 80px; }
 let dishCount = 0;
 const DELIVERY_FEE = 20;
 
+function timeToMinutes(t){
+  if (!t) return null;
+  const parts = String(t).split(":");
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1] ?? "0", 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+function isTimeInRange(t, minStr="12:00", maxStr="22:00"){
+  const v = timeToMinutes(t);
+  if (v === null) return false;
+  const min = timeToMinutes(minStr);
+  const max = timeToMinutes(maxStr);
+  return v >= min && v <= max;
+}
+
 /* פתיחה נוחה של בורר השעה בלחיצה על כל השדה (כשנתמך) */
 (function setupTimePickerOpenAnywhere(){
   const t = document.getElementById("pickupTime");
@@ -139,7 +172,7 @@ function selectDelivery(btn, type) {
     deliverySection.style.display = "block";
   }
 
-  updateTotal(); // חשוב: דמי משלוח מתעדכנים מיד
+  updateTotal();
 }
 
 function addDish() {
@@ -235,7 +268,6 @@ function selectOption(btn) {
   updateTotal();
 }
 
-// תוספת שיפוד: רק אחד, checkbox מאפשר ביטול בלחיצה חוזרת
 function handleExtraToggle(el) {
   const card = el.closest(".dish-card");
   if (!card) return;
@@ -327,21 +359,23 @@ function updateTotal() {
     total += price;
   });
 
-  // דמי משלוח אם נבחר "משלוח עד הבית"
   const isPickup = document.getElementById("pickupSection").style.display !== "none";
   if (!isPickup) total += DELIVERY_FEE;
 
   document.getElementById("totalSum").innerText = total;
 }
 
-// אכיפה לשעות 12:00-22:00 (גם אם מקלידים ידנית) - רק לשעת איסוף
+/* ✅ תיקון הקפצת הודעה: בודקים מספרית (בדקות) ולא עם השוואת מחרוזות */
 const pickupTimeEl = document.getElementById("pickupTime");
 if (pickupTimeEl) {
   pickupTimeEl.addEventListener("change", function() {
-    if (this.value && (this.value < "12:00" || this.value > "22:00")) {
-      alert("ניתן לבחור שעה בין 12:00 ל-22:00 בלבד");
-      this.value = "";
-    }
+    if (!this.value) return;
+
+    // אם תקין – לא עושים כלום (לא מקפיצים הודעות)
+    if (isTimeInRange(this.value, "12:00", "22:00")) return;
+
+    alert("ניתן לבחור שעה בין 12:00 ל-22:00 בלבד");
+    this.value = "";
   });
 }
 
@@ -358,7 +392,6 @@ function sendToWhatsApp() {
   let msg = "הזמנה חדשה - שיפודי מושון\n";
   msg += "שם מזמין: " + orderName + "\n";
 
-  // משלוח / איסוף
   const pickupVisible = document.getElementById("pickupSection").style.display !== "none";
 
   if (pickupVisible) {
@@ -366,6 +399,12 @@ function sendToWhatsApp() {
 
     if (!time) {
       alert("חובה לבחור שעת איסוף");
+      document.getElementById("pickupTime").focus();
+      return;
+    }
+
+    if (!isTimeInRange(time, "12:00", "22:00")) {
+      alert("שעת איסוף חייבת להיות בין 12:00 ל-22:00");
       document.getElementById("pickupTime").focus();
       return;
     }
@@ -429,7 +468,6 @@ function sendToWhatsApp() {
     total += dishPrice;
   });
 
-  // הוספת דמי משלוח לסיכום אם צריך
   const isPickup = document.getElementById("pickupSection").style.display !== "none";
   if (!isPickup) total += DELIVERY_FEE;
 

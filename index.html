@@ -12,7 +12,9 @@ h1 { color:#d4af37; }
 
 .customer-info { background:#222; padding:15px; border-radius:10px; margin-bottom:20px; text-align:right; border-bottom:2px solid #d4af37; }
 label { display:block; margin:10px 0 5px; color:#d4af37; font-weight:bold; }
-input[type="text"], input[type="time"], textarea {
+
+/* שדות */
+input[type="text"], input[type="time"], textarea, select {
   width:100%;
   max-width:100%;
   min-width:0;
@@ -100,7 +102,14 @@ textarea { resize: vertical; min-height: 80px; }
     <!-- שדות משלוח -->
     <div id="deliverySection" style="display:none; margin-top:10px;">
       <label>עיר:</label>
-      <input type="text" id="city" placeholder="עיר">
+      <!-- ✅ דרופדאון עיר - ברירת מחדל ריקה -->
+      <select id="city">
+        <option value="" selected>בחר/י עיר</option>
+        <option value="נס ציונה">נס ציונה</option>
+        <option value="רחובות">רחובות</option>
+        <option value="באר יעקב">באר יעקב</option>
+        <option value="ראשון צפון">ראשון צפון</option>
+      </select>
 
       <label>כתובת:</label>
       <input type="text" id="address" placeholder="רחוב ומספר">
@@ -304,7 +313,6 @@ function calcDishPrice(serving, meat) {
   return 0;
 }
 
-/* ממרחים - הגבלות */
 function getSpreadMaxForCard(card) {
   const servingBtn = card.querySelector('[data-serving].active');
   const serving = servingBtn ? servingBtn.dataset.serving : "pita";
@@ -365,13 +373,10 @@ function updateTotal() {
   document.getElementById("totalSum").innerText = total;
 }
 
-/* ✅ תיקון הקפצת הודעה: בודקים מספרית (בדקות) ולא עם השוואת מחרוזות */
 const pickupTimeEl = document.getElementById("pickupTime");
 if (pickupTimeEl) {
   pickupTimeEl.addEventListener("change", function() {
     if (!this.value) return;
-
-    // אם תקין – לא עושים כלום (לא מקפיצים הודעות)
     if (isTimeInRange(this.value, "12:00", "22:00")) return;
 
     alert("ניתן לבחור שעה בין 12:00 ל-22:00 בלבד");
@@ -412,13 +417,13 @@ function sendToWhatsApp() {
     msg += "אפשרות: איסוף עצמי\n";
     msg += "שעת איסוף: " + time + "\n\n";
   } else {
-    const city = document.getElementById("city").value.trim();
+    const city = document.getElementById("city").value; // select
     const address = document.getElementById("address").value.trim();
     const apartment = document.getElementById("apartment").value.trim();
     const floor = document.getElementById("floor").value.trim();
 
     if (!city || !address) {
-      alert("חובה למלא עיר וכתובת למשלוח");
+      alert("חובה לבחור עיר ולמלא כתובת למשלוח");
       return;
     }
 

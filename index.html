@@ -56,19 +56,46 @@ textarea { resize: vertical; min-height: 80px; }
   <div class="customer-info">
     <label>שם מזמין (כללי):</label>
     <input type="text" id="custName" placeholder="מי מזמין?">
-
-    <label>שעת איסוף (חובה):</label>
-    <input type="time"
-           id="pickupTime"
-           required
-           min="12:00"
-           max="22:00"
-           step="900"
-           inputmode="numeric">
   </div>
 
   <div id="dishes-container"></div>
   <button class="btn-add" type="button" onclick="addDish()">+ הוסף מנה (עד 5)</button>
+
+  <!-- אפשרות משלוח -->
+  <div class="section">
+    <label>אפשרות משלוח:</label>
+
+    <div class="button-group" style="grid-template-columns:1fr 1fr;">
+      <button type="button" class="option-btn active" onclick="selectDelivery(this,'pickup')">איסוף עצמי</button>
+      <button type="button" class="option-btn" onclick="selectDelivery(this,'delivery')">משלוח עד הבית (+20₪)</button>
+    </div>
+
+    <!-- שעת איסוף -->
+    <div id="pickupSection" style="margin-top:10px;">
+      <label>שעת איסוף:</label>
+      <input type="time"
+             id="pickupTime"
+             min="12:00"
+             max="22:00"
+             step="900"
+             inputmode="numeric">
+    </div>
+
+    <!-- שדות משלוח -->
+    <div id="deliverySection" style="display:none; margin-top:10px;">
+      <label>עיר:</label>
+      <input type="text" id="city" placeholder="עיר">
+
+      <label>כתובת:</label>
+      <input type="text" id="address" placeholder="רחוב ומספר">
+
+      <label>דירה:</label>
+      <input type="text" id="apartment" placeholder="מספר דירה">
+
+      <label>קומה:</label>
+      <input type="text" id="floor" placeholder="קומה">
+    </div>
+  </div>
 
   <!-- הערות -->
   <div class="section">
@@ -82,18 +109,38 @@ textarea { resize: vertical; min-height: 80px; }
 
 <script>
 let dishCount = 0;
+const DELIVERY_FEE = 20;
 
 /* פתיחה נוחה של בורר השעה בלחיצה על כל השדה (כשנתמך) */
 (function setupTimePickerOpenAnywhere(){
   const t = document.getElementById("pickupTime");
+  if (!t) return;
+
   function tryOpenPicker(){
     if (typeof t.showPicker === "function") t.showPicker();
   }
-  // קליק / טאצ' על כל השדה
   t.addEventListener("pointerdown", tryOpenPicker);
-  // גם כשמקבלים פוקוס (למשל עם TAB)
   t.addEventListener("focus", tryOpenPicker);
 })();
+
+function selectDelivery(btn, type) {
+  const group = btn.parentElement;
+  group.querySelectorAll(".option-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  const pickupSection = document.getElementById("pickupSection");
+  const deliverySection = document.getElementById("deliverySection");
+
+  if (type === "pickup") {
+    pickupSection.style.display = "block";
+    deliverySection.style.display = "none";
+  } else {
+    pickupSection.style.display = "none";
+    deliverySection.style.display = "block";
+  }
+
+  updateTotal(); // חשוב: דמי משלוח מתעדכנים מיד
+}
 
 function addDish() {
   if (dishCount >= 5) return alert("עד 5 מנות בלבד");
@@ -280,20 +327,26 @@ function updateTotal() {
     total += price;
   });
 
+  // דמי משלוח אם נבחר "משלוח עד הבית"
+  const isPickup = document.getElementById("pickupSection").style.display !== "none";
+  if (!isPickup) total += DELIVERY_FEE;
+
   document.getElementById("totalSum").innerText = total;
 }
 
-// אכיפה נוספת לשעות 12:00-22:00 (גם אם מקלידים ידנית)
-document.getElementById("pickupTime").addEventListener("change", function() {
-  if (this.value && (this.value < "12:00" || this.value > "22:00")) {
-    alert("ניתן לבחור שעה בין 12:00 ל-22:00 בלבד");
-    this.value = "";
-  }
-});
+// אכיפה לשעות 12:00-22:00 (גם אם מקלידים ידנית) - רק לשעת איסוף
+const pickupTimeEl = document.getElementById("pickupTime");
+if (pickupTimeEl) {
+  pickupTimeEl.addEventListener("change", function() {
+    if (this.value && (this.value < "12:00" || this.value > "22:00")) {
+      alert("ניתן לבחור שעה בין 12:00 ל-22:00 בלבד");
+      this.value = "";
+    }
+  });
+}
 
 function sendToWhatsApp() {
   const orderName = document.getElementById("custName").value.trim();
-  const time = document.getElementById("pickupTime").value;
   const notes = document.getElementById("orderNotes").value.trim();
 
   const dishes = document.querySelectorAll(".dish-card");
@@ -302,16 +355,42 @@ function sendToWhatsApp() {
     return;
   }
 
-  // שעת איסוף חובה
-  if (!time) {
-    alert("חובה לבחור שעת איסוף");
-    document.getElementById("pickupTime").focus();
-    return;
-  }
-
   let msg = "הזמנה חדשה - שיפודי מושון\n";
   msg += "שם מזמין: " + orderName + "\n";
-  msg += "שעת איסוף: " + time + "\n\n";
+
+  // משלוח / איסוף
+  const pickupVisible = document.getElementById("pickupSection").style.display !== "none";
+
+  if (pickupVisible) {
+    const time = document.getElementById("pickupTime").value;
+
+    if (!time) {
+      alert("חובה לבחור שעת איסוף");
+      document.getElementById("pickupTime").focus();
+      return;
+    }
+
+    msg += "אפשרות: איסוף עצמי\n";
+    msg += "שעת איסוף: " + time + "\n\n";
+  } else {
+    const city = document.getElementById("city").value.trim();
+    const address = document.getElementById("address").value.trim();
+    const apartment = document.getElementById("apartment").value.trim();
+    const floor = document.getElementById("floor").value.trim();
+
+    if (!city || !address) {
+      alert("חובה למלא עיר וכתובת למשלוח");
+      return;
+    }
+
+    msg += "אפשרות: משלוח עד הבית\n";
+    msg += "עיר: " + city + "\n";
+    msg += "כתובת: " + address + "\n";
+    if (apartment) msg += "דירה: " + apartment + "\n";
+    if (floor) msg += "קומה: " + floor + "\n";
+    msg += "דמי משלוח: " + DELIVERY_FEE + " ₪\n";
+    msg += "\n";
+  }
 
   let total = 0;
 
@@ -349,6 +428,10 @@ function sendToWhatsApp() {
     msg += "  • מחיר למנה: " + dishPrice + "₪\n\n";
     total += dishPrice;
   });
+
+  // הוספת דמי משלוח לסיכום אם צריך
+  const isPickup = document.getElementById("pickupSection").style.display !== "none";
+  if (!isPickup) total += DELIVERY_FEE;
 
   if (notes) {
     msg += "הערות: " + notes + "\n\n";

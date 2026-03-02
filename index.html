@@ -204,8 +204,6 @@ function addDish() {
         <button type="button" class="option-btn" data-meat="kabab" onclick="selectOption(this)">קבב</button>
         <button type="button" class="option-btn" data-meat="liver" onclick="selectOption(this)">כבד עוף</button>
         <button type="button" class="option-btn" data-meat="hearts" onclick="selectOption(this)">לבבות (2 שיפודים)</button>
-        <button type="button" class="option-btn" data-meat="antricot" onclick="selectOption(this)">אנטריקוט</button>
-        <button type="button" class="option-btn" data-meat="sweetbreads" onclick="selectOption(this)">שקדי עגל</button>
       </div>
 
       <div class="extra-wrap">
@@ -216,8 +214,6 @@ function addDish() {
           <label class="extra-item"><input type="checkbox" class="extra-skewer" value="22" data-name="כבד" onchange="handleExtraToggle(this)"> כבד (+22₪)</label>
           <label class="extra-item"><input type="checkbox" class="extra-skewer" value="20" data-name="לבבות" onchange="handleExtraToggle(this)"> לבבות (+20₪)</label>
           <label class="extra-item"><input type="checkbox" class="extra-skewer" value="18" data-name="נקנקיות חריפות" onchange="handleExtraToggle(this)"> נקנקיות חריפות (+18₪)</label>
-          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="80" data-name="שקדי עגל" onchange="handleExtraToggle(this)"> שקדי עגל (+80₪)</label>
-          <label class="extra-item"><input type="checkbox" class="extra-skewer" value="75" data-name="אנטריקוט" onchange="handleExtraToggle(this)"> אנטריקוט (+75₪)</label>
         </div>
       </div>
 
@@ -235,8 +231,6 @@ function addDish() {
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="כרוב לבן עם גזר במיונז" onchange="limitSpreads(this)"> כרוב לבן עם גזר במיונז</label>
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="מטבוחה טורקי" onchange="limitSpreads(this)"> מטבוחה טורקי</label>
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="סלט" onchange="limitSpreads(this)"> סלט</label>
-
-          <!-- ✅ חדשים: נספרים כחלק מה-5 -->
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="טחינה" onchange="limitSpreads(this)"> טחינה</label>
           <label class="extra-item"><input type="checkbox" class="spread" data-counts="1" value="לימון כבוש" onchange="limitSpreads(this)"> לימון כבוש</label>
 
@@ -285,25 +279,20 @@ function handleExtraToggle(el) {
   updateTotal();
 }
 
+/* ✅ אחרי שהורדנו אנטריקוט ושקדי עגל - נשאר מחיר קבוע לכל האפשרויות */
 function calcDishPrice(serving, meat) {
   const regular = ["pargit","kabab","liver","hearts"];
 
   if (serving === "pita") {
     if (regular.includes(meat)) return 45;
-    if (meat === "antricot") return 80;
-    if (meat === "sweetbreads") return 85;
   }
 
   if (serving === "lafa") {
     if (regular.includes(meat)) return 50;
-    if (meat === "antricot") return 85;
-    if (meat === "sweetbreads") return 90;
   }
 
   if (serving === "plate") {
     if (regular.includes(meat)) return 55;
-    if (meat === "antricot") return 90;
-    if (meat === "sweetbreads") return 95;
   }
 
   return 0;

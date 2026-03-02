@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>שיפודי מושון - הודעה</title>
+
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background:#000; color:#fff; padding:10px; text-align:center; }
+    .container { max-width:600px; background:#1a1a1a; padding:20px; border-radius:20px; margin:auto; border:1px solid #d4af37; box-shadow:0 0 20px rgba(212,175,55,0.2); }
+    h1 { color:#d4af37; margin: 6px 0 12px; }
+    .card { background:#222; border:1px solid #333; border-radius:14px; padding:16px; text-align:right; margin-top:12px; }
+    .lead { color:#ddd; line-height:1.55; font-size:16px; margin:0; }
+    .big { font-size:22px; font-weight:800; color:#fff; margin:0 0 8px; }
+    .gold { color:#d4af37; font-weight:800; }
+
+    label { display:block; margin:12px 0 6px; color:#d4af37; font-weight:bold; }
+    input[type="tel"]{
+      width:100%; max-width:100%; min-width:0;
+      padding:12px; border-radius:10px;
+      border:1px solid #333; background:#333; color:#fff;
+      box-sizing:border-box;
+    }
+
+    .note { color:#bbb; font-size:12px; line-height:1.4; margin-top:8px; }
+
+    .btn-send{
+      background:#25d366; color:#fff; border:none;
+      padding:15px; width:100%; border-radius:12px;
+      font-size:18px; font-weight:bold; cursor:pointer;
+      margin-top:14px;
+    }
+
+    .divider { height:1px; background:#333; margin:14px 0; }
+
+    .small-link{
+      display:inline-block;
+      color:#d4af37;
+      text-decoration:none;
+      border:1px dashed #d4af37;
+      padding:10px 12px;
+      border-radius:12px;
+      margin-top:10px;
+      font-weight:700;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>שיפודי מושון</h1>
+
+    <div class="card">
+      <p class="big">המסעדה <span class="gold">סגורה זמנית</span></p>
+      <p class="lead">
+        אנחנו עושים הפסקה קצרה ומסדרים כמה דברים מאחורי הקלעים 💛<br>
+        נחזור לפעילות מלאה בקרוב, עם אותו הטעם והאהבה.
+      </p>
+
+      <div class="divider"></div>
+
+      <label for="phone">רוצה שנעדכן אותך כשנחזור?</label>
+      <input type="tel" id="phone" placeholder="הכניסי מספר טלפון (לדוגמה: 05XXXXXXXX)" inputmode="tel" />
+
+      <div class="note">
+        בלחיצה על “שלח” תיפתח הודעת וואטסאפ אלינו עם המספר שהזנת, כדי שנשמור אותך לרשימת עדכונים.
+      </div>
+
+      <button class="btn-send" type="button" onclick="sendUpdateRequest()">שלח בוואטסאפ</button>
+
+      <!-- אופציונלי: לינק לדף ההזמנה כשהוא חוזר -->
+      <!-- <a class="small-link" href="order.html">לעמוד הזמנות</a> -->
+    </div>
+  </div>
+
+  <script>
+    const WHATSAPP_NUMBER = "972548620301";
+
+    function normalizePhone(p) {
+      return String(p || "").trim();
+    }
+
+    function sendUpdateRequest() {
+      const phone = normalizePhone(document.getElementById("phone").value);
+
+      if (!phone) {
+        alert("נא להכניס מספר טלפון כדי שנוכל לעדכן אותך 😊");
+        document.getElementById("phone").focus();
+        return;
+      }
+
+      const msg =
+        "היי שיפודי מושון,\n" +
+        "אשמח לקבל עדכון כשהמסעדה חוזרת לפעילות.\n" +
+        "מספר טלפון לעדכון: " + phone;
+
+      window.open("https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(msg), "_blank");
+    }
+  </script>
+</body>
+</html>

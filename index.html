@@ -84,7 +84,7 @@ label{
 }
 
 /* שדות קלט */
-input[type="text"], input[type="time"], textarea, select{
+input[type="text"], input[type="time"], input[type="tel"], textarea, select{
   width:100%;
   max-width:100%;
   min-width:0;
@@ -99,9 +99,11 @@ input[type="text"], input[type="time"], textarea, select{
   font-size:16px;
 }
 input[type="text"]::placeholder,
+input[type="tel"]::placeholder,
 textarea::placeholder{ color:rgba(255,255,255,0.55); }
 
 input[type="text"]:focus,
+input[type="tel"]:focus,
 input[type="time"]:focus,
 textarea:focus,
 select:focus{
@@ -282,7 +284,7 @@ textarea{ resize: vertical; min-height: 90px; }
     <div id="deliverySection" style="display:none; margin-top:10px;">
       <label>עיר:</label>
       <select id="city">
-        <option value="" selected>בחר/י עיר</option>
+        <option value="" selected disabled hidden>בחר/י עיר</option>
         <option value="נס ציונה">נס ציונה</option>
         <option value="רחובות">רחובות</option>
         <option value="באר יעקב">באר יעקב</option>
@@ -291,6 +293,10 @@ textarea{ resize: vertical; min-height: 90px; }
 
       <label>כתובת:</label>
       <input type="text" id="address" placeholder="רחוב ומספר">
+
+
+      <label>טלפון:</label>
+      <input type="tel" id="phone" placeholder="מספר טלפון" inputmode="tel" autocomplete="tel">
 
       <label>דירה:</label>
       <input type="text" id="apartment" placeholder="מספר דירה">
@@ -574,19 +580,24 @@ function sendToWhatsApp() {
     msg += "אפשרות: איסוף עצמי\n";
     msg += "שעת איסוף: " + time + "\n\n";
   } else {
-    const city = document.getElementById("city").value;
+    const city = (document.getElementById("city").value || "").trim();
     const address = document.getElementById("address").value.trim();
+    const phone = (document.getElementById("phone")?.value || "").trim();
     const apartment = document.getElementById("apartment").value.trim();
     const floor = document.getElementById("floor").value.trim();
 
-    if (!city || !address) {
-      alert("חובה לבחור עיר ולמלא כתובת למשלוח");
+    if (!city || !address || !phone) {
+      alert("חובה לבחור עיר ולמלא כתובת ומספר טלפון למשלוח");
+      if (!city) document.getElementById("city")?.focus();
+      else if (!address) document.getElementById("address")?.focus();
+      else document.getElementById("phone")?.focus();
       return;
     }
 
     msg += "אפשרות: משלוח עד הבית\n";
     msg += "עיר: " + city + "\n";
     msg += "כתובת: " + address + "\n";
+    msg += "טלפון: " + phone + "\n";
     if (apartment) msg += "דירה: " + apartment + "\n";
     if (floor) msg += "קומה: " + floor + "\n";
     msg += "דמי משלוח: " + DELIVERY_FEE + " ₪\n";

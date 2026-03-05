@@ -170,6 +170,12 @@ textarea{ resize: vertical; min-height: 90px; }
   box-shadow:0 0 8px rgba(212,175,55,0.55);
 }
 
+/* ✅ הגדלה קלה של כפתורי הבשר */
+.option-btn[data-meat]{
+  font-size:18px;
+  font-weight:800;
+}
+
 /* תוספות */
 .extra-wrap{ margin-top:12px; }
 .extra-grid{
@@ -294,7 +300,6 @@ textarea{ resize: vertical; min-height: 90px; }
       <label>כתובת:</label>
       <input type="text" id="address" placeholder="רחוב ומספר">
 
-
       <label>טלפון:</label>
       <input type="tel" id="phone" placeholder="מספר טלפון" inputmode="tel" autocomplete="tel">
 
@@ -316,9 +321,32 @@ textarea{ resize: vertical; min-height: 90px; }
 </div>
 
 <script>
-/* כל ה-JS שלך נשאר בדיוק אותו דבר */
+/* כל ה-JS שלך נשאר בדיוק אותו דבר + תוספות לאנטריקוט + נקנקיות חריפות */
 let dishCount = 0;
 const DELIVERY_FEE = 20;
+
+/* ✅ מחירי אנטריקוט לפי הגשה */
+function entrecotePriceByServing(serving){
+  if (serving === "pita") return 80;
+  if (serving === "lafa") return 85;
+  if (serving === "plate") return 90;
+  return 0;
+}
+
+/* ✅ עדכון הטקסט של כפתור אנטריקוט לפי ההגשה שנבחרה */
+function updateEntrecoteLabel(card){
+  if (!card) return;
+
+  const servingBtn = card.querySelector('[data-serving].active');
+  const serving = servingBtn ? servingBtn.dataset.serving : "pita";
+
+  const entreBtn = card.querySelector('[data-meat="entrecote"]');
+  if (!entreBtn) return;
+
+  const base = entreBtn.dataset.label || "אנטריקוט";
+  const p = entrecotePriceByServing(serving);
+  entreBtn.innerText = p ? `${base} (${p}₪)` : base;
+}
 
 function timeToMinutes(t){
   if (!t) return null;
@@ -395,6 +423,12 @@ function addDish() {
         <button type="button" class="option-btn" data-meat="kabab" onclick="selectOption(this)">קבב</button>
         <button type="button" class="option-btn" data-meat="liver" onclick="selectOption(this)">כבד עוף</button>
         <button type="button" class="option-btn" data-meat="hearts" onclick="selectOption(this)">לבבות (2 שיפודים)</button>
+
+        <!-- ✅ חדש: נקנקיות חריפות (ללא מחיר מוצג על הכפתור) -->
+        <button type="button" class="option-btn" data-meat="sausages" onclick="selectOption(this)">נקנקיות חריפות</button>
+
+        <!-- ✅ אנטריקוט עם בסיס שם נקי לוואטסאפ -->
+        <button type="button" class="option-btn" data-meat="entrecote" data-label="אנטריקוט" onclick="selectOption(this)">אנטריקוט</button>
       </div>
 
       <div class="extra-wrap">
@@ -435,6 +469,9 @@ function addDish() {
     </div>
   `);
 
+  const newCard = document.getElementById(id);
+  updateEntrecoteLabel(newCard); /* ✅ שיראה מחיר כברירת מחדל (פיתה) */
+
   updateTotal();
 }
 
@@ -453,6 +490,7 @@ function selectOption(btn) {
   btn.classList.add("active");
 
   enforceSpreadLimit(card);
+  updateEntrecoteLabel(card); /* ✅ כל שינוי הגשה יעדכן את מחיר האנטריקוט */
   updateTotal();
 }
 
@@ -469,10 +507,23 @@ function handleExtraToggle(el) {
 }
 
 function calcDishPrice(serving, meat) {
-  const regular = ["pargit","kabab","liver","hearts"];
-  if (serving === "pita") { if (regular.includes(meat)) return 45; }
-  if (serving === "lafa") { if (regular.includes(meat)) return 50; }
-  if (serving === "plate") { if (regular.includes(meat)) return 55; }
+  /* ✅ הוספנו sausages לרשימת הרגילים */
+  const regular = ["pargit","kabab","liver","hearts","sausages"];
+
+  // רגיל
+  if (regular.includes(meat)) {
+    if (serving === "pita") return 45;
+    if (serving === "lafa") return 50;
+    if (serving === "plate") return 55;
+  }
+
+  // ✅ אנטריקוט
+  if (meat === "entrecote") {
+    if (serving === "pita") return 80;
+    if (serving === "lafa") return 85;
+    if (serving === "plate") return 90;
+  }
+
   return 0;
 }
 
@@ -615,7 +666,9 @@ function sendToWhatsApp() {
     const personText = dishPerson ? ` (ל${dishPerson})` : "";
 
     const servingText = servingBtn.innerText.trim();
-    const meatText = meatBtn.innerText.trim();
+
+    /* ✅ כדי שלא ישלח בוואטסאפ "אנטריקוט (80₪)" אלא רק "אנטריקוט" */
+    const meatText = (meatBtn.dataset.label || meatBtn.innerText).trim();
 
     let dishPrice = calcDishPrice(servingBtn.dataset.serving, meatBtn.dataset.meat);
 
